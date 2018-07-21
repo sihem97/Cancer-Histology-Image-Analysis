@@ -1,0 +1,22 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+readRDS("/Users/violakyoungalee/Downloads/knn-cv-full.rds")
+readRDS("/Users/violakyoungalee/Downloads/knn-cv-hog.rds")
+readRDS("/Users/violakyoungalee/Downloads/knn-cv-sift.rds")
+
+library(class)
+x.trainLabels <- x_main.train[,1]
+x.testLabels <- x_main.test[,1]
+x_pred <- knn(train=x_main.train[,-1], test=x_main.test[,-1], cl=x.trainLabels, k=25)
+confusionMatrix(x_pred, x.testLabels)
+```
+
+```{r}
+x.testLabels <- x_main.test[,1]
+confusionMatrix(x_pred, x.testLabels)
+```
+

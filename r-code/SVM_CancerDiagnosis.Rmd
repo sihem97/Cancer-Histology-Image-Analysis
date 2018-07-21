@@ -1,0 +1,133 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Machine Learning for Breast Cancer Diagnosis
+## Support Vector Machine
+### Visualizing our original image data
+```{r}
+library(readr,png)
+library(caret)
+library(e1071)
+library(EBImage)
+ImagePlot <- list()
+for (i in 1:5546) {
+  ImagePlot[[i]] <- readImage(paste0('/Users/violakyoungalee/Desktop/DataScienceR/fck/',i,".png"))
+}
+par(mfrow=c(73,76))
+for (i in 1:5546) {
+  plot(ImagePlot[[i]])
+}
+```
+
+```{r}
+y.images <- readr::read_csv(file='/Users/violakyoungalee/Desktop/DataScienceR/fck/y.csv')
+y.images$X1 <- NULL
+head(y.images) # glimpse at the data
+
+x.images <- list() # nrow(y.images)
+for(i in 2:(nrow(y.images))-1) {
+  x.filename <- paste0('/Users/violakyoungalee/Desktop/DataScienceR/fck/',i,".png")
+  x.images[[i]] <- png::readPNG(x.filename)
+}
+
+dim(x.images[[1]]) # checking the dimension, should be 50x50x3 (50x50 = pixel; 3 = RGB)
+head(x.images) # glimpse at the data
+set.seed(123) # setting seed
+
+x_main <- readRDS("/Users/violakyoungalee/Desktop/DataScienceR/fck/x_main.rds")
+x_main$Row.names <- NULL
+index.train <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+
+x_main.train <- x_main[index.train,]
+x_main.test <- x_main[-index.train,]
+x_main.test$label <- as.factor(x_main.test$label)
+x_main.train$label <- as.factor(x_main.train$label)
+```
+
+# Linear Kernel
+## SVM 훈련
+```{r}
+svm.linear <- svm(label ~ ., data=x_main.train, kernel="linear")
+summary(svm.linear)
+pred.linear <- predict(svm.linear, x_main.test)
+confusionMatrix(pred.linear, x_main.test$label)
+```
+
+# Radial Kernel
+## SVM 훈련
+```{r}
+svm.radial <- svm(label ~ ., data=x_main.train, kernel="radial")
+summary(svm.radial)
+pred.radial <- predict(svm.radial, x_main.test)
+confusionMatrix(pred.radial, x_main.test$label)
+```
+
+# Polynomial Kernel
+## SVM 훈련
+```{r}
+svm.poly <- svm(label ~ ., data=x_main.train, kernel="polynomial")
+summary(svm.poly)
+pred.poly <- predict(svm.poly, x_main.test)
+confusionMatrix(pred.poly, x_main.test$label)
+```
+
+# Sigmoid Kernel
+## SVM 훈련
+```{r}
+svm.sigmoid <- svm(label ~ ., data=x_main.train, kernel="sigmoid")
+summary(svm.sigmoid)
+pred.sigmoid <- predict(svm.sigmoid, x_main.test)
+confusionMatrix(pred.sigmoid, x_main.test$label)
+```
+
+# Kernel에 사용되는 파라미터는 어떻게 결정?
+## 모수 선택 (Linear Kernel, 5-fold CV)
+* Performance: 잘못 분류된 비율
+```{r}
+# grid search
+tune.linear.cross <- tune(svm, label ~ ., data = x_main.test, kernel="linear",
+            ranges = list(cost = c(3:8)*2),
+            tunecontrol = tune.control(sampling = "cross", cross=5))
+plot(tune.linear.cross)
+tune.linear.cross$best.performance
+```
+
+## 모수 선택 (Linear Kernel, bootstrap 5번)
+* cost = 8, 10, 12, 14
+```{r}
+# grid search
+tune.linear.bootstrap <- tune(svm, label ~ ., data = x_main.test, kernel="linear",
+            ranges = list(cost = c(4:7)*2),
+            tunecontrol = tune.control(sampling = "bootstrap", boot.size=0.8, nboot=3))
+plot(tune.linear.bootstrap)
+tune.linear.bootstrap$best.performance
+```
+
+## 모수 선택 (Radial Kernel, 5-fold CV)
+* gamma = 1/200, 2/200, 3/200
+* cost = 8, 10, 12, 14
+```{r}
+# grid search
+tune.radial.cross <- tune(svm, label ~ ., data = x_main.test, kernel="radial",
+            ranges = list(gamma = c(1:3)/200, cost = c(4:7)*2),
+            tunecontrol = tune.control(sampling = "cross", cross=5))
+plot(tune.radial.cross)
+tune.radial.cross$best.performance
+```
+
+## 모수 선택 (Radial Kernel, bootstrap 5번)
+* gamma = 1/200, 2/200, 3/200
+* cost = 8, 10, 12, 14
+```{r}
+# grid search
+tune.radial.bootstrap <- tune(svm, label ~ ., data = x_main.test, kernel="radial",
+            ranges = list(gamma = c(1:3)/200, cost = c(4:7)*2),
+            tunecontrol = tune.control(sampling = "bootstrap", boot.size=0.8, nboot=5))
+plot(tune.radial.bootstrap)
+tune.radial.bootstrap$best.performance
+```
+
+
+

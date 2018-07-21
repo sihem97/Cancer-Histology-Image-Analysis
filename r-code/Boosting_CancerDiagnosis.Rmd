@@ -1,0 +1,77 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Machine Learning for Breast Cancer Diagnosis
+## Boosting Method
+### 이경아, 정진우, 차유진, 현경근
+
+# 패키지
+```{r}
+# install.packages("xgboost")
+library(xgboost)
+library(caret)
+library(rpart)
+```
+
+## 훈련/테스트 데이터
+```{r}
+x_main <- readRDS("/Users/violakyoungalee/Desktop/DataScienceR/fck/x_main.rds")
+x_main$Row.names <- NULL
+index.train <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train <- x_main[index.train,]
+x_main.test <- x_main[-index.train,]
+x_main$label <- factor(x_main$label)
+x_main.test$label <- factor(x_main.test$label)
+x_main.train$label <- factor(x_main.train$label)
+```
+
+## 훈련
+* objective = "multi:softmax" -> num_class 개수로 분류
+* data는 numeric 값들의 data.matrix 필요
+```{r}
+x.boost <- xgboost(data = data.matrix(x_main.train[,-1]), 
+                          label = x_main.train[,1],
+                          max_depth = 4, eta = 0.1, nrounds = 100,
+                          objective = "multi:softmax", num_class = 3)
+```
+
+## 예측
+```{r}
+pred.x <- predict(x.boost,
+                  newdata = data.matrix(x_main.test[,-1]),
+                  ntreelimit = 100)
+
+pred.x <- pred.x - 1
+pred.x <- as.factor(pred.x)
+confusionMatrix(as.factor(pred.x), as.factor(x_main.test[,1]))
+```
+
+
+```{r}
+install.packages("JOUSBoost")
+library(JOUSBoost)
+x_main.train[,1]
+y <- as.vector(x_main.train[,1])
+y[y == 0] <- -1
+y <- as.numeric(y)
+str(y)
+str(x_main.train[,-1])
+adaboost(as.matrix(x_main.train[,-1]), y, tree_depth = 3, n_rounds = 100, verbose = FALSE, control = NULL)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

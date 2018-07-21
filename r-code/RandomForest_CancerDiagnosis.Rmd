@@ -1,0 +1,163 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Machine Learning for Breast Cancer Diagnosis
+## Random Forest (Bagging) Method
+### 이경아, 정진우, 차유진, 현경근
+
+# packages
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+```
+
+## 표본 10개 추출
+```{r}
+set.seed(123)
+x_main <- readRDS("/Users/violakyoungalee/Desktop/DataScienceR/fck/x_main.rds")
+x_main$Row.names <- NULL
+
+index_1 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train1 <- x_main[index_1,]
+x_main.train1$label <- as.factor(x_main.train1$label)
+
+index_2 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train2 <- x_main[index_2,]
+x_main.train2$label <- as.factor(x_main.train2$label)
+
+index_3 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train3 <- x_main[index_3,]
+x_main.train3$label <- as.factor(x_main.train3$label)
+
+index_4 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train4 <- x_main[index_4,]
+x_main.train4$label <- as.factor(x_main.train4$label)
+
+index_5 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train5 <- x_main[index_5,]
+x_main.train5$label <- as.factor(x_main.train5$label)
+
+index_6 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train6 <- x_main[index_6,]
+x_main.train6$label <- as.factor(x_main.train6$label)
+
+index_7 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train7 <- x_main[index_7,]
+x_main.train7$label <- as.factor(x_main.train7$label)
+
+index_8 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train8 <- x_main[index_8,]
+x_main.train8$label <- as.factor(x_main.train8$label)
+
+index_9 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train9 <- x_main[index_9,]
+x_main.train9$label <- as.factor(x_main.train9$label)
+
+index_10 <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train10 <- x_main[index_10,]
+x_main.train10$label <- as.factor(x_main.train10$label)
+```
+
+## 분류 나무 10개
+```{r}
+fit_1 <- rpart(label ~ ., method="class", data = x_main.train1)
+rpart.plot(fit_1)
+fit_2 <- rpart(label ~ ., method="class", data = x_main.train2)
+rpart.plot(fit_2)
+fit_3 <- rpart(label ~ ., method="class", data = x_main.train3)
+rpart.plot(fit_3)
+fit_4 <- rpart(label ~ ., method="class", data = x_main.train4)
+rpart.plot(fit_4)
+fit_5 <- rpart(label ~ ., method="class", data = x_main.train5)
+rpart.plot(fit_5)
+fit_6 <- rpart(label ~ ., method="class", data = x_main.train6)
+rpart.plot(fit_6)
+fit_7 <- rpart(label ~ ., method="class", data = x_main.train7)
+rpart.plot(fit_7)
+fit_8 <- rpart(label ~ ., method="class", data = x_main.train8)
+rpart.plot(fit_8)
+fit_9 <- rpart(label ~ ., method="class", data = x_main.train9)
+rpart.plot(fit_9)
+fit_10 <- rpart(label ~ ., method="class", data = x_main.train10)
+rpart.plot(fit_10)
+```
+
+## 아무 관측값 선택
+```{r}
+x_main[10,]
+x_main[20,]
+```
+
+## 10 번째 관측값에 대해
+* 아직 Bagging 아님
+```{r}
+pred_list <- sapply(list(fit_1, fit_2, fit_3, fit_4, fit_5, fit_6, fit_7, fit_8, fit_9, fit_9, fit_10),  function(x){predict(object=x, newdata=x_main[10,])})
+mean(pred_list[1,]) # absent
+mean(pred_list[2,]) # present
+```
+
+## 20 번째 관측값에 대해
+* 아직 Bagging 아님
+```{r}
+pred_list <- sapply(list(fit_1, fit_2, fit_3, fit_4, fit_5, fit_6, fit_7, fit_8, fit_9, fit_9, fit_10),  function(x){predict(object=x, newdata=x_main[20,])})
+mean(pred_list[1,]) # absent
+mean(pred_list[2,]) # present
+```
+
+# Bagging
+## adabag 패키지 (분류만 가능)
+```{r}
+library(adabag)
+```
+
+## 분류
+```{r}
+index.train <- sample(1:nrow(x_main), round(nrow(x_main) * 0.8))
+x_main.train <- x_main[index.train,]
+x_main.test <- x_main[-index.train,]
+x_main.test$label <- as.factor(x_main.test$label)
+x_main.train$label <- as.factor(x_main.train$label)
+
+# mfinal: 반복 횟수
+x.bagging <- bagging(label ~ ., data = x_main.train, mfinal=500)
+summary(x.bagging)
+```
+
+### 나무들
+```{r}
+x.bagging$trees[[1]]
+x.bagging$trees[[2]]
+```
+
+* 나무들 각각은 그냥 rpart에서의 나무
+```{r}
+rpart.plot(x.bagging$trees[[1]])
+```
+
+### 예측
+```{r}
+x.predbagging <- predict.bagging(x.bagging, newdata=x_main.test)
+x.predbagging
+```
+
+# Random Forest
+## 분류
+```{r}
+library(randomForest)
+```
+
+### 훈련 (변수 개수: 7500)
+```{r}
+# ntree: 나무의 개수, mtry: 사용할 변수의 개수
+x.rf2 <- randomForest(label ~ ., data = x_main.train, mtry=7500, ntree=500, importance=TRUE)
+x.rf2
+```
+
+### 예측 (변수: 7500)
+```{r}
+pred.rf2 <- predict(x.rf2, x_main.test)
+confusionMatrix(pred.rf2, x_main.test[,1])
+```
+
